@@ -142,12 +142,29 @@ uid=0(root) gid=0(root)
 
 **OWASP IoT Top 10 category:** I10: Lack of Physical Hardening — anyone with brief physical access to the device (e.g. during shipping, repair, or theft) can obtain full root-level control without needing any credentials, bypassing every network-facing protection entirely.
 
+### Finding 4 — I5: Use of Insecure or Outdated Components
+
+```bash
+cat /etc/openwrt_release
+uname -a
+opkg list-installed | head -30
+```
+
+![Outdated OpenWrt, kernel, and package versions](images/outdated-components.png)
+
+*Version information gathered via the root shell, showing the base OS, kernel, and a sample of installed packages, all dated between 2017-2019.*
+
+The device is running OpenWrt 18.06.2 (released 2018) on Linux kernel 4.9.152 (built January 2019). Linux kernel 4.9 reached end-of-life years ago and no longer receives security patches of any kind. Several core packages are similarly dated, including dropbear (the SSH server itself) at version 2017.75-7.1, iptables/firewall from 2018, and numerous kernel modules tied to the same outdated 4.9.152 base.
+
+**OWASP IoT Top 10 category:** I5: Use of Insecure or Outdated Components — the device runs a kernel, base OS, and multiple core packages that are several years past end-of-life, meaning any vulnerability discovered in these components since their release — including in the SSH service itself — remains permanently unpatched on this device.
+
 ## Key Takeaways
 
 - Precompiled release assets can go stale/broken over time — always verify, and be prepared to build from source
 - Project-specific build configuration files (like `.config-rpi`) matter — following generic tool documentation without checking for project-specific overrides can silently produce an incomplete result
 - Weak network service exposure and hardcoded credentials remain trivially exploitable even in a modern lab setting, reinforcing why these categories top the OWASP IoT Top 10
 - Security assessments of IoT devices must consider physical access alongside network-based attacks — a device can be perfectly hardened on the network and still be trivially compromised by anyone who can physically reach it
+- Outdated, unpatched components remain in use even in 2026-era security training material, underscoring how persistent this issue is across the IoT industry
 
 ## References
 
