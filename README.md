@@ -58,6 +58,7 @@ make -j$(nproc)
 Rebuilding with this config produced a complete image with all of IoTGoat's intended services present.
 
 ![IoTGoat boot banner shown via SSH login](images/boot-screen.png)
+
 *The OWASP/IoTGoat ASCII banner and GitHub link displayed on SSH login (via PuTTY), confirming the correct firmware — not generic OpenWrt — was successfully flashed and is running on the device.*
 
 ## Vulnerability Assessment
