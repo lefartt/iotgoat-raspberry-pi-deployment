@@ -77,6 +77,7 @@ With a correctly-built image flashed and booted, I performed an initial assessme
 | 65534 | Telnet |
 
 ![netstat output showing all intended services](images/netstat-services.png)
+
 *Output of `netstat -tlnp` run as root via the backdoor shell, confirming all of IoTGoat's intended vulnerable services are present and listening: `uhttpd` (LuCI web interface, ports 80/443), `shellback` (unauthenticated backdoor, port 5515), `dropbear` (SSH, port 22), `dnsmasq` (DNS, port 53), and `miniupnpd` (UPnP, port 5000).*
 
 
@@ -87,6 +88,7 @@ nc -nv 192.168.0.3 5515
 ```
 
 ![Unauthenticated backdoor granting root shell](images/backdoor-exploit.png)
+
 *Connecting to port 5515 via netcat immediately grants a root shell with no authentication required, confirmed via the `id` command returning `uid=0(root)`. This demonstrates OWASP IoT Top 10 category I2: Insecure Network Services.*
 
 This returned an immediate, unauthenticated root shell:
@@ -121,6 +123,7 @@ hashcat -m 500 -a 0 iotgoat_hash.txt mirai-pass.txt
 Result: password cracked in under a second.
 
 ![hashcat cracking the iotgoatuser password hash](images/hashcat-crack.png)
+
 *Using hashcat with a wordlist of common IoT default passwords, the `iotgoatuser` MD5-crypt password hash was cracked, revealing the password `7ujMko0vizxv`. This demonstrates OWASP IoT Top 10 category I1: Weak, Guessable, or Hardcoded Passwords.*
 
 This maps to OWASP IoT Top 10 category **I1: Weak, Guessable, or Hardcoded Passwords**.
