@@ -63,7 +63,7 @@ Rebuilding with this config produced a complete image with all of IoTGoat's inte
 
 ## Vulnerability Assessment
 
-With a correctly-built image flashed and booted, I performed an initial assessment from a separate Kali Linux VM on the same network.
+With a correctly-built image flashed and booted, I performed an assessment against the OWASP IoT Top 10, using a separate Kali Linux VM on the same network for network-based testing, and direct console access for physical testing.
 
 ### Confirmed services (via `netstat` and `nmap`)
 
@@ -80,35 +80,9 @@ With a correctly-built image flashed and booted, I performed an initial assessme
 
 *Output of `netstat -tlnp` run as root via the backdoor shell, confirming all of IoTGoat's intended vulnerable services are present and listening: `uhttpd` (LuCI web interface, ports 80/443), `shellback` (unauthenticated backdoor, port 5515), `dropbear` (SSH, port 22), `dnsmasq` (DNS, port 53), and `miniupnpd` (UPnP, port 5000).*
 
+### Finding 1 — I1: Weak, Guessable, or Hardcoded Passwords
 
-### Exploiting the unauthenticated backdoor (port 5515)
-
-```bash
-nc -nv 192.168.0.5 5515
-```
-
-![Unauthenticated backdoor granting root shell](images/backdoor-exploit.png)
-
-*Connecting to port 5515 via netcat immediately grants a root shell with no authentication required, confirmed via the `id` command returning `uid=0(root)`. This demonstrates OWASP IoT Top 10 category I2: Insecure Network Services.*
-
-This returned an immediate, unauthenticated root shell:
-
-```
-[***]Successfully Connected to IoTGoat's Backdoor[***]
-```
-
-Confirmed with:
-
-```bash
-id
-# uid=0(root) gid=0(root)
-```
-
-This maps to the OWASP IoT Top 10 category **I2: Insecure Network Services** — an unnecessary, unauthenticated service granting full device control.
-
-### Cracking weak/hardcoded credentials
-
-Using the root shell obtained above, I read `/etc/shadow` directly:
+Using a root shell obtained via the backdoor (see Finding 2 below), I read `/etc/shadow` directly:
 
 ```bash
 cat /etc/shadow
@@ -124,15 +98,56 @@ Result: password cracked in under a second.
 
 ![hashcat cracking the iotgoatuser password hash](images/hashcat-crack.png)
 
-*Using hashcat with a wordlist of common IoT default passwords, the `iotgoatuser` MD5-crypt password hash was cracked, revealing the password `7ujMko0vizxv`. This demonstrates OWASP IoT Top 10 category I1: Weak, Guessable, or Hardcoded Passwords.*
+*Using hashcat with a wordlist of common IoT default passwords, the `iotgoatuser` MD5-crypt password hash was cracked, revealing the password `7ujMko0vizxv`.*
 
-This maps to OWASP IoT Top 10 category **I1: Weak, Guessable, or Hardcoded Passwords**.
+**OWASP IoT Top 10 category:** I1: Weak, Guessable, or Hardcoded Passwords — the device ships with credentials that are crackable in seconds using a small, publicly known wordlist, rather than unique or securely generated per-device.
+
+### Finding 2 — I2: Insecure Network Services
+
+```bash
+nc -nv 192.168.0.5 5515
+```
+
+![Unauthenticated backdoor granting root shell](images/backdoor-exploit.png)
+
+*Connecting to port 5515 via netcat immediately grants a root shell with no authentication required, confirmed via the `id` command returning `uid=0(root)`.*
+
+This returned an immediate, unauthenticated root shell:
+
+```
+[***]Successfully Connected to IoTGoat's Backdoor[***]
+```
+
+Confirmed with:
+
+```bash
+id
+# uid=0(root) gid=0(root)
+```
+
+**OWASP IoT Top 10 category:** I2: Insecure Network Services — an unnecessary, unauthenticated network service is exposed on the device, granting full remote control to anyone who discovers it, with no authentication step of any kind.
+
+### Finding 3 — I10: Lack of Physical Hardening
+
+Connecting a monitor and keyboard directly to the Raspberry Pi's HDMI and USB ports grants an immediate root shell (`root@IoTGoat:/#`) with no username or password prompt at any point in the boot sequence.
+
+![Unauthenticated physical console access](images/physical-console-access.png)
+
+*The physical console drops directly into a root shell on connection, with no login prompt shown at any point.*
+
+```
+root@IoTGoat:/# id
+uid=0(root) gid=0(root)
+```
+
+**OWASP IoT Top 10 category:** I10: Lack of Physical Hardening — anyone with brief physical access to the device (e.g. during shipping, repair, or theft) can obtain full root-level control without needing any credentials, bypassing every network-facing protection entirely.
 
 ## Key Takeaways
 
 - Precompiled release assets can go stale/broken over time — always verify, and be prepared to build from source
 - Project-specific build configuration files (like `.config-rpi`) matter — following generic tool documentation without checking for project-specific overrides can silently produce an incomplete result
 - Weak network service exposure and hardcoded credentials remain trivially exploitable even in a modern lab setting, reinforcing why these categories top the OWASP IoT Top 10
+- Security assessments of IoT devices must consider physical access alongside network-based attacks — a device can be perfectly hardened on the network and still be trivially compromised by anyone who can physically reach it
 
 ## References
 
